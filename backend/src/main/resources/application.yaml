@@ -1,0 +1,35 @@
+server:
+  port: 8000
+
+app:
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    base-url: https://openrouter.ai/api/v1
+    model: openai/gpt-oss-120b
+  llm-mock: ${LLM_MOCK:false}
+  massive:
+    api-key: ${MASSIVE_API_KEY:}
+    base-url: https://api.massive.com
+    poll-interval: 15s
+  db-path: ${DB_PATH:../db/finally.db}
+
+spring:
+  application:
+    name: finally
+  config:
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: jdbc:sqlite:${app.db-path}
+    hikari:
+      maximum-pool-size: 1
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  task:
+    scheduling:
+      pool:
+        size: 2

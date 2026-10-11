@@ -1,0 +1,4 @@
+# Test overrides; Gradle deletes build/test-db before each test run.
+app:
+  db-path: build/test-db/finally.db
+  llm-mock: true
