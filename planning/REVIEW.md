@@ -197,3 +197,34 @@ Overall the plan is coherent, layered cleanly, and buildable step by step. The i
 ### Verdict
 
 The plan is sound and ready to implement once items 1–6 are fixed in the text. All six are one- or two-sentence edits. Items 7–13 can be settled in the step that first touches them (4, 4, 4, 9, 11, 7, 13).
+
+## 2026-10-09 — Review of all uncommitted changes on `start` (vs fd6c29b)
+
+**Scope:** `planning/PLAN.md` (modified after the 2026-10-07 review), `.claude/settings.json` (modified), `.claude/agents/change-reviewer.md` (deleted).
+
+### Status of the 2026-10-07 findings
+
+- **Fixed in PLAN.md:** 1–13 and 19. That covers the empty `DB_PATH`, comments on their own lines in `.env`, `@JsonProperty`, lowercase enums, trade reads inside the transaction, watchlist changes before trades, the simulator seeding a price on `track()`, the `untrack` rule, the DataSource `@Bean`, `TIME_SCALE = 100`, rounding in `PriceCache`, `update(ticker, price, openPrice)`, `ResponseEntityExceptionHandler`, the 30s timeout, `require_parameters`, the `total_value` definition, frontend step 12, and Massive moved to step 15.
+- **Still open (low):**
+  - 14: Jackson 3 `tools.jackson.*` packages are not mentioned.
+  - 15: Step 1 still names the legacy `mockwebserver` and should use `mockwebserver3`.
+  - 17: The watchlist order is not defined (`ORDER BY added_at`).
+  - 18: Snapshot retention is not addressed.
+  - 16: Test DB isolation is open and now sharper, see item 2 below.
+
+### New findings: PLAN.md
+
+1. **Medium: watchlist failures in chat are not caught (§9 Flow step 5).** Step 6 says trade errors are collected, but step 5 says nothing about watchlist changes. "watch AAPL" for an already-watched ticker raises the 409 exception, and "unwatch" for an absent ticker raises the 404. Either one would fail the whole `/api/chat` request instead of landing in `actions.errors`. Fix: state that watchlist change failures (duplicate, absent, invalid ticker) are collected into `errors` the same way trade failures are.
+2. **Medium: tests cannot set `DB_PATH` per test (§13).** "Fresh SQLite file in a JUnit `@TempDir` (set via `DB_PATH`)": a test cannot set an environment variable. Fix: use a static `@TempDir` plus `@DynamicPropertySource` that sets `app.db-path` (and `app.llm-mock=true`). Note that the Spring context cache reuses one DB across test classes.
+3. **Low: redundant `track()` call (§8 Business Rules).** "Buying a ticker not on the watchlist calls `track()` (already priced...)". A price exists only for a ticker that is already tracked, so the call is a no-op. It is harmless, but it can be removed, or kept as an explicit idempotent safety call.
+4. **Low: Boot 4 test starters (step 1).** Boot 4 split test support into per-technology test starters (for example a WebFlux test starter for `WebTestClient`). Confirm the dependency names when generating the project at start.spring.io.
+
+### New findings: `.claude/` changes
+
+5. **Medium: the Stop hook runs on every turn.** The `agent` Stop hook has no condition, so it runs a full review after every turn, including unrelated ones (this run was triggered by a `gh auth login` exchange). Each run costs up to 240s and tokens, and it blocks stopping until REVIEW.md is "current". Consider triggering the review on demand (a slash command or skill) or only before a commit.
+6. **Low: reviews are no longer independent.** Deleting `change-reviewer.md` removes the independent `codex exec` reviewer. The Stop hook now has Claude review Claude's own changes. If an independent second opinion was the goal, keep the codex agent and have the hook call it.
+7. **Low: permission rule scope (verify).** The `Bash(git status:*)`, `Bash(git diff:*)` and `Bash(git log:*)` rules do not cover the PowerShell tool, which is the primary shell on this machine. `Edit(/planning/REVIEW.md)` uses the leading-`/` form, whose base directory depends on the settings file location. Confirm that it matches the project's `planning/REVIEW.md`, or use `Edit(planning/REVIEW.md)`.
+
+### Verdict
+
+PLAN.md is ready to implement. Items 1 and 2 are one-sentence edits; make them before steps 10 and 7. The `.claude` changes work, but the Stop hook (5) adds cost and friction to every turn.
