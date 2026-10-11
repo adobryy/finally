@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "message": {"type": "string"},
+    "trades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ticker": {"type": "string"},
+          "side": {"type": "string", "enum": ["buy", "sell"]},
+          "quantity": {"type": "number"}
+        },
+        "required": ["ticker", "side", "quantity"],
+        "additionalProperties": false
+      }
+    },
+    "watchlist_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ticker": {"type": "string"},
+          "action": {"type": "string", "enum": ["add", "remove"]}
+        },
+        "required": ["ticker", "action"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["message", "trades", "watchlist_changes"],
+  "additionalProperties": false
+}
